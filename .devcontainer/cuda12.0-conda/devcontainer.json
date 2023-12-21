@@ -9,6 +9,7 @@
     }
   },
   "hostRequirements": {"gpu": "optional"},
+  "runArgs": ["--add-host=host.docker.internal:host-gateway"],
   "features": {
     "./features/rapids-build-utils": {}
   },
