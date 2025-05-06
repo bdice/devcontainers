@@ -102,6 +102,7 @@ declare -a commands_and_sources=(
     "init-ssh-deploy-keys               ssh/init-deploy-keys.sh"
     "init-github-cli                    github/cli/init.sh"
     "clone-github-repo                  github/repo/clone.sh"
+    "github-user-scopes                 github/user/scopes.sh"
     "init-gitlab-cli                    gitlab/cli/init.sh"
     "clone-gitlab-repo                  gitlab/repo/clone.sh"
     "print-missing-gitlab-token-warning gitlab/print-missing-token-warning.sh"
@@ -124,10 +125,13 @@ done
 declare -a commands="($(for pair in "${commands_and_sources[@]}"; do cut -d' ' -f1 <<< "${pair}"; done))";
 
 # Install bash_completion script
-devcontainer-utils-generate-bash-completion                          \
-    --out-file /etc/bash_completion.d/devcontainer-utils-completions \
-    ${commands[@]/#/--command devcontainer-utils-}                   \
-;
+read -ra commands <<< "${commands[*]/#/--command devcontainer-utils-}";
+if test "${#commands[@]}" -gt 0; then
+    devcontainer-utils-generate-bash-completion                          \
+        --out-file /etc/bash_completion.d/devcontainer-utils-completions \
+        "${commands[@]}"                                                 \
+    ;
+fi
 
 find /opt/devcontainer \
     \( -type d -exec chmod 0775 {} \; \
