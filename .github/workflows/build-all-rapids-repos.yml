@@ -27,7 +27,7 @@ jobs:
     if: needs.check-event.outputs.ok == 'true'
     needs: check-event
     secrets: inherit
-    uses: rapidsai/shared-workflows/.github/workflows/build-in-devcontainer.yaml@branch-25.10
+    uses: rapidsai/shared-workflows/.github/workflows/build-in-devcontainer.yaml@fea/preprocessor-caching
     permissions:
       actions: read
       packages: read
@@ -41,42 +41,27 @@ jobs:
       extra-repo-deploy-key: CUMLPRIMS_SSH_PRIVATE_DEPLOY_KEY
       rapids-aux-secret-1: GIST_REPO_READ_ORG_GITHUB_TOKEN
       timeout-minutes: 720
-      # 1. Prevent the sccache server from shutting down
-      # 2. Infinitely retry transient errors
+      # 1. Infinitely retry transient errors
+      # 2. Enable debug logging to track cache misses
       # 3. Never fallback to locally compiling
+      # 4. Use RAPIDS_AUX_SECRET_1 as the sccache-dist auth token
       env: |
         CONDA_ENV_CREATE_QUIET=1
-        SCCACHE_IDLE_TIMEOUT=0
         SCCACHE_DIST_MAX_RETRIES=inf
+        SCCACHE_SERVER_LOG=sccache=debug
         SCCACHE_DIST_FALLBACK_TO_LOCAL_COMPILE=false
+        SCCACHE_DIST_AUTH_TOKEN_VAR=RAPIDS_AUX_SECRET_1
       build_command: |
-        # Install the latest sccache client
-        devcontainer-utils-install-sccache --repo trxcllnt/sccache;
-
-        # Configure the sccache client to talk to the build cluster
-        devcontainer-utils-init-sccache-dist      \
-          --enable-sccache-dist - <<< "           \
-          --auth-type 'token'                     \
-          --auth-token '$RAPIDS_AUX_SECRET_1'     \
-        ";
-
         # Verify sccache cache location
         sccache --show-adv-stats;
 
         # Clone all the repos
-        clone-all -j$(nproc) -v -q --clone-upstream --depth 1 --single-branch --shallow-submodules --no-update-env;
-
-        # Create the python env without ninja.
-        # ninja -j10000 fails with `ninja: FATAL: pipe: Too many open files`.
-        # This appears to have been fixed 13 years ago (https://github.com/ninja-build/ninja/issues/233),
-        # so that fix needs to be integrated into the kitware pip ninja builds.
-        rapids-post-start-command --exclude <(echo ninja);
-
-        set -x;
+        clone-all -j$(nproc) -v -q --clone-upstream --depth 1 --single-branch --shallow-submodules;
 
         # Configure all the C++ libs
-        configure-all                 \
-          -j$(ulimit -Hn)             \
+        time configure-all            \
+          -j0                         \
+          -GNinja                     \
           -Wno-dev                    \
           -DBUILD_TESTS=ON            \
           -DBUILD_BENCHMARKS=ON       \
@@ -85,8 +70,11 @@ jobs:
           -DRAFT_COMPILE_LIBRARY=ON   \
           -DBUILD_CUGRAPH_MG_TESTS=ON ;
 
-        # Build all the libs
-        build-all -j$(ulimit -Hn);
+        # Build all the C++ libs
+        time build-all-cpp -j0;
+
+        # Build all the Python libs
+        time build-all-python -j0;
 
         # Print cache and dist stats
         sccache --show-adv-stats;

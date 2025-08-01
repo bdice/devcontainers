@@ -18,7 +18,7 @@
     "--name",
     "${localEnv:USER:anon}-rapids-${localWorkspaceFolderBasename}-25.10-cuda12.9-conda",
     "--ulimit",
-    "nofile=1048576:1048576"
+    "nofile=500000"
   ],
   "hostRequirements": {"gpu": "optional"},
   "features": {

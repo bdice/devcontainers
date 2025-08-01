@@ -34,7 +34,7 @@ install_${PY_LIB}_python() {
 
     local -a pip_args_=(${PIP_INSTALL_ARGS});
 
-    eval "$(_parse_args --take '-G -e,--editable -v,--verbose' "$@" "${cmake_args_[@]}" "${pip_args_[@]}" <&0)";
+    eval "$(_parse_args --take '-G -e,--editable -j,--parallel -v,--verbose' "$@" "${cmake_args_[@]}" "${pip_args_[@]}" <&0)";
 
     if [[ ! -d "${PY_SRC}" ]]; then
         echo "install-${PY_LIB}-python: cannot access '${PY_SRC}': No such directory" >&2;
@@ -119,7 +119,7 @@ EOF
         echo "Installing ${PY_LIB}";
         export ${PY_ENV} PATH="$PATH";
         local cudaflags="${CUDAFLAGS:+$CUDAFLAGS }-t=${n_arch}";
-        local build_type="$(rapids-select-cmake-build-type "${cmake_args_[@]}")";
+        local build_type="$(rapids-select-cmake-build-type "${cmake_args_[@]}" || echo "Release")";
         local nvcc_append_flags="${NVCC_APPEND_FLAGS:+$NVCC_APPEND_FLAGS }-t=${n_arch}";
 
         CUDAFLAGS="${cudaflags}"                     \
