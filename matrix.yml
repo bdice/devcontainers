@@ -2,8 +2,9 @@ x-cuda-prev-min: &cuda_prev_min { name: "cuda", version: "12.0" }
 x-cuda-prev-max: &cuda_prev_max { name: "cuda", version: "12.9" }
 x-cuda-curr-min: &cuda_curr_min { name: "cuda", version: "12.0" }
 x-cuda-curr-max: &cuda_curr_max { name: "cuda", version: "12.9" }
-x-cuda-prev-max-rapids: &cuda_prev_max_rapids { name: "cuda", version: "11.8" }
-x-cuda-curr-max-rapids: &cuda_curr_max_rapids { name: "cuda", version: "12.8" }
+# Commented as RAPIDS only supports one major version (CUDA 12) right now
+#x-cuda-prev-max-rapids: &cuda_prev_max_rapids { name: "cuda", version: "12.9" }
+x-cuda-curr-max-rapids: &cuda_curr_max_rapids { name: "cuda", version: "12.9" }
 
 x-gcc-7: &gcc_7 { name: "gcc", version: "7" }
 x-gcc-8: &gcc_8 { name: "gcc", version: "8" }
@@ -24,8 +25,8 @@ x-llvm-prev: &llvm_18 { name: "llvm", version: "18" }
 x-llvm-curr: &llvm_19 { name: "llvm", version: "19" }
 x-llvm-env: &llvm_env { CC: "clang", CXX: "clang++", CUDAHOSTCXX: "clang++" }
 
-x-nvhpc-prev: &nvhpc_prev { name: "nvhpc", version: "25.3" }
-x-nvhpc-curr: &nvhpc_curr { name: "nvhpc", version: "25.5" }
+x-nvhpc-prev: &nvhpc_prev { name: "nvhpc", version: "25.5" }
+x-nvhpc-curr: &nvhpc_curr { name: "nvhpc", version: "25.7" }
 
 x-nvhpc-env: &nvhpc_env { CC: "nvc", CXX: "nvc++", CUDAHOSTCXX: "nvc++" }
 
@@ -113,8 +114,16 @@ include:
 
 - os: "ubuntu:24.04"
   images:
+  # CTK versions < cuda_curr_max used for python wheel testing.
+  # FIXME 12.3, 12.4, 12.7 don't seem to have apt packages available in the repos. Investigate if we end up really needing those.
+  - { features: [*python, *dood, *gcc_14, { name: "cuda", version: "12.5", <<: *cccl_cuda_opts }, *clang_format_cccl, *clangd_dev, *cccl_dev], env: *gcc_env }
+  - { features: [*python, *dood, *gcc_14, { name: "cuda", version: "12.6", <<: *cccl_cuda_opts }, *clang_format_cccl, *clangd_dev, *cccl_dev], env: *gcc_env }
+  - { features: [*python, *dood, *gcc_14, { name: "cuda", version: "12.8", <<: *cccl_cuda_opts }, *clang_format_cccl, *clangd_dev, *cccl_dev], env: *gcc_env }
+
   - { features: [*python, *dood, *gcc_13, { <<: *cuda_curr_max, <<: *cccl_cuda_opts }, *clang_format_cccl, *clangd_dev, *cccl_dev], env: *gcc_env }
   - { features: [*python, *dood, *gcc_14, { <<: *cuda_curr_max, <<: *cccl_cuda_opts }, *clang_format_cccl, *clangd_dev, *cccl_dev], env: *gcc_env }
+  - { features: [*python, *dood, *gcc_14, { <<: *cuda_curr_max, <<: *cccl_cuda_ext_opts }, *clang_format_cccl, *clangd_dev, *cccl_dev], env: *gcc_env }
+
 
 - os: "windows"
   images:
@@ -134,23 +143,33 @@ include:
 - os: "ubuntu:22.04"
   images:
   # cuda
-  - { features: [*python_rapids, *clang_format_rapids, *clangd_dev, *cuda_prev_max_rapids], env: *gcc_env_rapids }
-  - { features: [*python_rapids, *clang_format_rapids, *clangd_dev, *cuda_curr_min], env: *gcc_env_rapids }
+  # Commented as RAPIDS only supports one major version (CUDA 12) right now
+  #- { features: [*python_rapids, *clang_format_rapids, *clangd_dev, *cuda_prev_max_rapids], env: *gcc_env_rapids }
+  #- { features: [*python_rapids, *clang_format_rapids, *clangd_dev, *cuda_curr_min], env: *gcc_env_rapids }
   - { features: [*python_rapids, *clang_format_rapids, *clangd_dev, *cuda_curr_max], env: *gcc_env_rapids }
   - { features: [*python_rapids, *clang_format_rapids, *clangd_dev, *cuda_curr_max_rapids], env: *gcc_env_rapids }
-  - { features: [*python_rapids, *clang_format_rapids, *clangd_dev, *cuda_prev_max_rapids, *ucx_rapids, *openmpi], env: *gcc_env_rapids }
-  - { features: [*python_rapids, *clang_format_rapids, *clangd_dev, *cuda_curr_min, *ucx_rapids, *openmpi], env: *gcc_env_rapids }
+  # Commented as RAPIDS only supports one major version (CUDA 12) right now
+  #- { features: [*python_rapids, *clang_format_rapids, *clangd_dev, *cuda_prev_max_rapids, *ucx_rapids, *openmpi], env: *gcc_env_rapids }
+  #- { features: [*python_rapids, *clang_format_rapids, *clangd_dev, *cuda_curr_min, *ucx_rapids, *openmpi], env: *gcc_env_rapids }
   - { features: [*python_rapids, *clang_format_rapids, *clangd_dev, *cuda_curr_max, *ucx_rapids, *openmpi], env: *gcc_env_rapids }
   - { features: [*python_rapids, *clang_format_rapids, *clangd_dev, *cuda_curr_max_rapids, *ucx_rapids, *openmpi], env: *gcc_env_rapids }
 
   # mambaforge
   - { features: [*conda], env: { PYTHON_VERSION: "3.13" } }
 
-  ###
-  # Legacy CUDA 11.x + mambaforge image. Needed so the cudatoolkit 11.x
-  # conda package has access to the CUDA Toolkit headers. Remove once
-  # `cuda_prev_max_rapids` is bumped up to CUDA Toolkit 12.
-  ###
+- os: "ubuntu:24.04"
+  images:
+  # cuda
+  # Commented as RAPIDS only supports one major version (CUDA 12) right now
+  #- { features: [*python_rapids, *clang_format_rapids, *clangd_dev, *cuda_prev_max_rapids], env: *gcc_env_rapids }
+  #- { features: [*python_rapids, *clang_format_rapids, *clangd_dev, *cuda_curr_min], env: *gcc_env_rapids }
+  - { features: [*python_rapids, *clang_format_rapids, *clangd_dev, *cuda_curr_max], env: *gcc_env_rapids }
+  - { features: [*python_rapids, *clang_format_rapids, *clangd_dev, *cuda_curr_max_rapids], env: *gcc_env_rapids }
+  # Commented as RAPIDS only supports one major version (CUDA 12) right now
+  #- { features: [*python_rapids, *clang_format_rapids, *clangd_dev, *cuda_prev_max_rapids, *ucx_rapids, *openmpi], env: *gcc_env_rapids }
+  #- { features: [*python_rapids, *clang_format_rapids, *clangd_dev, *cuda_curr_min, *ucx_rapids, *openmpi], env: *gcc_env_rapids }
+  - { features: [*python_rapids, *clang_format_rapids, *clangd_dev, *cuda_curr_max, *ucx_rapids, *openmpi], env: *gcc_env_rapids }
+  - { features: [*python_rapids, *clang_format_rapids, *clangd_dev, *cuda_curr_max_rapids, *ucx_rapids, *openmpi], env: *gcc_env_rapids }
 
-  # cuda-mambaforge
-  - { features: [*cuda_prev_max_rapids, *conda], env: { PYTHON_VERSION: "3.13" } }
+  # mambaforge
+  - { features: [*conda], env: { PYTHON_VERSION: "3.13" } }
